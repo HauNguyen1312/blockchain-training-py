@@ -2,6 +2,7 @@ import json
 import logging
 import socket
 import time
+import hashlib
 from datetime import datetime
 from threading import Thread
 
@@ -18,8 +19,14 @@ class Block(object):
         self.hash = hashvalue
 
     def calculate_hash(self):
-        # TODO
-        pass
+        sha = hashlib.sha256()
+        sha.update(str(self.index) +
+                    str(self.timestamp)+
+                    str(self.previous_hash)+
+                    str(self.data)+
+                    str(self.nonce)
+                    )
+        return sha.hexdigest()
 
     @staticmethod
     def from_previous(block, data):
@@ -69,9 +76,24 @@ class Server(object):
     def list_peers(self):
         return jsonify(self.peers)
 
+    def create_account(self):
+        key = RSA.generate(1024)
+        pubkey = key.publickey().exportKey('PEM').hex()
+        prikey = key.exportKey('PEM').hex()
+        balance = 13121994
+        args = {pubkey, prikey, balance}
+        return jsonify(args)
+
     def add_blocks(self):
-        # TODO
-        pass
+        block = {
+            'index': len(self.chain) + 1,
+            'timestamp': datetime.now(),
+            'transactions': self.transactions,
+            'previous_hash': self.hash(self.chain[-1]),
+        }
+        self.chain.append(block)
+        return block
+
 
     def add_transactions(self):
         # TODO
